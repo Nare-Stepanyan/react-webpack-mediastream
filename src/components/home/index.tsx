@@ -1,27 +1,21 @@
 import React, { useEffect } from "react";
 import DeviceList from "../device-list";
+import Stream from "../stream-component";
+import { dbConnector } from "./../../providers/db-provider";
+import StreamComponent from "../stream-component";
+import { mediaProvider } from "../../providers/media-provider";
+import Settings from "../settings";
 
 const Home = () => {
   useEffect(() => {
-    // Prefer camera resolution nearest to 1280x720.
-    const constraints = {
-      audio: true,
-      video: { width: 1280, height: 720 },
-    };
-
-    navigator.mediaDevices
-      .getUserMedia(constraints)
-      .then((mediaStream) => {
-        console.log(mediaStream);
-      })
-      .catch((err) => {
-        // always check for errors at the end.
-        console.error(`${err.name}: ${err.message}`);
-      });
+    dbConnector.openDB();
+    mediaProvider.getDevices();
   }, []);
   return (
     <div>
       <DeviceList />
+      <Settings />
+      <StreamComponent />
     </div>
   );
 };
