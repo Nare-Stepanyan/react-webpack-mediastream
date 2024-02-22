@@ -27,3 +27,39 @@ table {
     }
   }
 }
+.centered {
+  width: 80%;
+  margin: 20px auto;
+}
+.flex {
+  display: flex;
+  align-items: cenetr;
+}
+.justify-around {
+  justify-content: space-around;
+}
+
+video {
+  width: 800px;
+  height: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px auto;
+  outline: 1px solid grey;
+}
+.video-buttons {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  width: 800px;
+  margin: 20px auto;
+  button {
+    width: 200px;
+    padding: 15px;
+    border-radius: 5px;
+    outline: none;
+    border: none;
+    cursor: pointer;
+  }
+}

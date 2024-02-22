@@ -1,11 +1,15 @@
 class StreamProvider {
   stream: MediaStream | null = null;
 
-  private async createStream(mic: MediaDeviceInfo, camera: MediaDeviceInfo) {
-    this.stream = await navigator.mediaDevices.getUserMedia({
-      video: { deviceId: camera.deviceId },
-      audio: { deviceId: mic.deviceId },
-    });
+  async createStream(mic: MediaDeviceInfo, camera: MediaDeviceInfo) {
+    try {
+      return (this.stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: camera.deviceId },
+        audio: { deviceId: mic.deviceId },
+      }));
+    } catch (error) {
+      console.error("Error accessing media devices:", error);
+    }
   }
 
   startStream(mic: MediaDeviceInfo | null, camera: MediaDeviceInfo | null) {
@@ -15,7 +19,7 @@ class StreamProvider {
     if (!mic || !camera) {
       return;
     }
-    this.createStream(mic, camera);
+    return this.createStream(mic, camera);
   }
   stopStream() {
     if (this.stream) {
@@ -24,6 +28,7 @@ class StreamProvider {
         .forEach((track: MediaStreamTrack) => track.stop());
       this.stream = null;
     }
+    return this.stream;
   }
 }
 

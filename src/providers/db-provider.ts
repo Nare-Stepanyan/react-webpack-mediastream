@@ -1,55 +1,79 @@
-class DbProvider {
-  private db: IDBDatabase | null;
-  dbName: string;
+const DB_NAME: string = "test-db";
+const DB_VERSION: number = 1;
+const STORE_NAME: string = "records";
 
-  constructor(dbName: string, dbVersion: number) {
-    this.dbName = dbName;
-    this.db = null;
-  }
+class DbProvider {
+  private db: IDBDatabase | null = null;
 
   async openDB() {
-    let db;
-    const request = indexedDB.open(this.dbName);
-    request.onerror = (event) => {
-      console.error("Why didn't you allow my web app to use IndexedDB?!");
-    };
-    request.onsuccess = (event) => {
-      const target = event.target as IDBOpenDBRequest;
-      db = target.result;
-    };
+    if (this.db) {
+      return this.db;
+    }
+    const indexedDB =
+      window.indexedDB ||
+      (window as any).mozIndexedDB ||
+      (window as any).webkitIndexedDB ||
+      (window as any).msIndexedDB ||
+      (window as any).shimIndexedDB;
+
+    if (!indexedDB) return;
+
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = this.onerror;
+    request.onupgradeneeded = this.onupgradeneeded;
+    request.onsuccess = this.onsuccess;
   }
 
-  async getItems(storeName: string): Promise<any[]> {
+  private onerror = (event: Event) => {
+    const { message } = (event.target as IDBOpenDBRequest).error || {};
+    console.error(`Error: ${message}`);
+  };
+
+  private onupgradeneeded = async (event: IDBVersionChangeEvent) => {
+    this.db = (event.target as IDBOpenDBRequest).result;
+    if (!this.db!.objectStoreNames.contains(STORE_NAME)) {
+      this.db!.createObjectStore(STORE_NAME, { keyPath: "chunkId" });
+    }
+  };
+
+  private onsuccess = (event: Event) => {
+    return (this.db = (event.target as IDBOpenDBRequest).result);
+  };
+
+  async getItems(): Promise<any> {
+    if (!this.db) {
+      return;
+    }
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(storeName, "readonly");
-      const objectStore = transaction.objectStore(storeName);
+      const transaction = this.db!.transaction(STORE_NAME, "readonly");
+      const objectStore = transaction.objectStore(STORE_NAME);
       const request = objectStore.getAll();
+      console.log("success 111");
 
-      request.onerror = (event: any) => {
-        reject(`Error getting records from ${storeName}: ${event.target}`);
+      request.onsuccess = (event: Event): void => {
+        resolve((event.target as IDBOpenDBRequest).result);
       };
-
-      request.onsuccess = (event: any) => {
-        resolve(request.result);
+      request.onerror = (event: Event) => {
+        reject(`Error getting records from ${STORE_NAME}: ${event.target}`);
       };
     });
   }
 
-  async addItem(storeName: string, item: any): Promise<void> {
+  async addItem(item: any): Promise<void> {
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(storeName, "readwrite");
-      const objectStore = transaction.objectStore(storeName);
+      const transaction = this.db!.transaction(STORE_NAME, "readwrite");
+      const objectStore = transaction.objectStore(STORE_NAME);
       const request = objectStore.add(item);
 
-      request.onerror = (event) => {
-        reject(`Error adding item to ${storeName}: ${event.target}`);
+      request.onsuccess = () => {
+        resolve(item);
       };
-
-      request.onsuccess = (event) => {
-        resolve();
+      request.onerror = (event: Event) => {
+        reject(`Error adding item to ${STORE_NAME}: ${event.target}`);
       };
     });
   }
 }
 
-export const dbConnector = new DbProvider("test", 1);
+export const dbConnector = new DbProvider();

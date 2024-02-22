@@ -3,16 +3,12 @@ import { streamProvider } from "../../providers/stream-provider";
 import {
   selectedCameraSelector,
   selectedMicSelector,
-  selectedSpeakerSelector,
 } from "../../store/stream/stream-selector";
 import { useAppSelector } from "../../hooks";
 
-type StreamProps = {};
-
-const StreamComponent: FC<StreamProps> = () => {
+const StreamComponent: FC = () => {
   const selectedMic = useAppSelector(selectedMicSelector);
   const selectedCamera = useAppSelector(selectedCameraSelector);
-  const selctedSpeaker = useAppSelector(selectedSpeakerSelector);
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -35,9 +31,11 @@ const StreamComponent: FC<StreamProps> = () => {
   };
 
   return (
-    <div>
-      <video ref={videoRef}></video>
-    </div>
+    <>
+      <div>
+        <video ref={videoRef} width={640} height={360}></video>
+      </div>
+    </>
   );
 };
 

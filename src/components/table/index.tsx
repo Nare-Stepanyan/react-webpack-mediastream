@@ -16,15 +16,13 @@ const Table: FC<TableProps> = ({ devices }) => {
       </thead>
       <tbody>
         {devices &&
-          devices
-            .filter(({ deviceId }) => deviceId !== "default")
-            .map(({ deviceId, label, kind }, i) => (
-              <tr key={i}>
-                <td>{label}</td>
-                <td>{kind}</td>
-                <td>{deviceId}</td>
-              </tr>
-            ))}
+          devices.map(({ deviceId, label, kind }, i) => (
+            <tr key={i}>
+              <td>{label}</td>
+              <td>{kind}</td>
+              <td>{deviceId}</td>
+            </tr>
+          ))}
       </tbody>
     </table>
   );
