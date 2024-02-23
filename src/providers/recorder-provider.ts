@@ -1,4 +1,6 @@
+import { STORE_NAMES } from "../constants";
 import { dbConnector } from "./db-provider";
+import { recordingDbProvider } from "./recording-db-provider";
 
 const CHUNK_DURATION = 2000;
 
@@ -11,7 +13,7 @@ class RecorderProvider {
       console.log("Recording started");
     };
     this.recorder.ondataavailable = (event: BlobEvent) => {
-      dbConnector
+      recordingDbProvider
         .addItem({
           chunkId: this.chunkId++,
           data: event.data,

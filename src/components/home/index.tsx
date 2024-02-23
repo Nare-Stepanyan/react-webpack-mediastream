@@ -12,9 +12,11 @@ import {
   selectedCameraSelector,
   selectedMicSelector,
 } from "../../store/stream/stream-selector";
+import { recordingDbProvider } from "../../providers/recording-db-provider";
+import { STORE_NAMES } from "../../constants";
 
 const Home = () => {
-  const [isRecording, setIsRecording] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
   const selectedMic = useAppSelector(selectedMicSelector);
   const selectedCamera = useAppSelector(selectedCameraSelector);
 
@@ -33,7 +35,7 @@ const Home = () => {
   };
 
   const onDownload = async () => {
-    const chunks = (await dbConnector.getItems()) as Chunk[];
+    const chunks = (await recordingDbProvider.getItems()) as Chunk[];
     if (!chunks?.length) return;
     const blob = new Blob(
       chunks?.map((chunk: Chunk) => chunk.data),

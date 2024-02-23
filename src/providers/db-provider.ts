@@ -1,11 +1,15 @@
+import { STORES } from "../constants";
+import { createDefer } from "../defer";
+import { Defer } from "../types";
+
 const DB_NAME: string = "test-db";
 const DB_VERSION: number = 1;
-const STORE_NAME: string = "records";
 
-class DbProvider {
+class DbProvider<T> {
   private db: IDBDatabase | null = null;
+  isDbOpened = createDefer();
 
-  async openDB() {
+  openDB() {
     if (this.db) {
       return this.db;
     }
@@ -28,51 +32,61 @@ class DbProvider {
   private onerror = (event: Event) => {
     const { message } = (event.target as IDBOpenDBRequest).error || {};
     console.error(`Error: ${message}`);
+    this.isDbOpened.reject(message);
   };
 
   private onupgradeneeded = async (event: IDBVersionChangeEvent) => {
     this.db = (event.target as IDBOpenDBRequest).result;
-    if (!this.db!.objectStoreNames.contains(STORE_NAME)) {
-      this.db!.createObjectStore(STORE_NAME, { keyPath: "chunkId" });
-    }
+    STORES.forEach(({ name, keyPath }) => {
+      if (!this.db!.objectStoreNames.contains(name)) {
+        console.log(`Creating object store: ${name}`);
+        this.db!.createObjectStore(name, { keyPath });
+      }
+    });
+    this.isDbOpened.resolve();
   };
 
   private onsuccess = (event: Event) => {
-    return (this.db = (event.target as IDBOpenDBRequest).result);
+    this.db = (event.target as IDBOpenDBRequest).result;
+    this.isDbOpened.resolve();
   };
 
-  async getItems(): Promise<any> {
+  async getItems<T>(storeName: string) {
     if (!this.db) {
       return;
     }
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(STORE_NAME, "readonly");
-      const objectStore = transaction.objectStore(STORE_NAME);
-      const request = objectStore.getAll();
-      console.log("success 111");
+    const defer = createDefer<T>();
 
-      request.onsuccess = (event: Event): void => {
-        resolve((event.target as IDBOpenDBRequest).result);
-      };
-      request.onerror = (event: Event) => {
-        reject(`Error getting records from ${STORE_NAME}: ${event.target}`);
-      };
-    });
+    const transaction = this.db!.transaction(storeName, "readonly");
+    const objectStore = transaction.objectStore(storeName);
+    const request = objectStore.getAll();
+
+    request.onsuccess = (event: Event): void => {
+      defer.resolve((event.target as IDBOpenDBRequest).result as T);
+    };
+    request.onerror = (event: Event) => {
+      defer.reject(`Error getting records from ${storeName}: ${event.target}`);
+    };
+    return defer.promise!;
   }
 
-  async addItem(item: any): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(STORE_NAME, "readwrite");
-      const objectStore = transaction.objectStore(STORE_NAME);
-      const request = objectStore.add(item);
+  async addItem<T>(item: T, storeName: string) {
+    if (!this.db) {
+      return;
+    }
+    const defer = createDefer<T>();
 
-      request.onsuccess = () => {
-        resolve(item);
-      };
-      request.onerror = (event: Event) => {
-        reject(`Error adding item to ${STORE_NAME}: ${event.target}`);
-      };
-    });
+    const transaction = this.db!.transaction(storeName, "readwrite");
+    const objectStore = transaction.objectStore(storeName);
+    const request = objectStore.add(item);
+
+    request.onsuccess = () => {
+      defer.resolve(item);
+    };
+    request.onerror = (event: Event) => {
+      defer.reject(`Error adding item to ${storeName}: ${event.target}`);
+    };
+    return defer.promise!;
   }
 }
 
